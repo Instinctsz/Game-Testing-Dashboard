@@ -1,0 +1,200 @@
+<!-- This is a static file -->
+<!-- served from your routes in server.js -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A cool thing made with Glitch" />
+
+    <title>Welcome to Glitch!</title>
+
+    <link
+      id="favicon"
+      rel="icon"
+      href="https://glitch.com/edit/favicon-app.ico"
+      type="image/x-icon"
+    />
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css" />
+
+    <!-- import the webpage's client-side javascript file -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="/script.js" defer></script>
+    
+
+    <script>
+      const chartData = {
+        wortels: {
+          title: "Hoeveelheid mensen die wortels verzamelen",
+          eenheid: "Wortels",
+          range: 5
+        },
+        Levens: {
+          title: "Hoeveel levens een speler heeft verloren per level",
+          eenheid: "Levens",
+          range: 10
+        },
+        shots: {
+          title: "Hoevaak een speler schiet per level",
+          eenheid: "Shots",
+          range: 5
+        },
+        doublejumps: {
+          title: "Hoevaak een speler Double Jumped per level",
+          eenheid: "Double Jumps",
+          range: 5
+        },
+        crouches: {
+          title: "Hoevaak een speler crouched per level",
+          eenheid: "Crouches",
+          range: 5
+        },
+        Eyes_Closed: {
+          title: "Hoevaak een speler zijn ogen dicht doet per level",
+          eenheid: "keer ogen gesloten",
+          range: 5
+        },
+        speeltijd: {
+          title: "Hoe lang het duurde voordat een speler een level voltooide",
+          eenheid: "Seconden",
+          range: 30
+        }
+      };
+
+      async function getData(key) {
+        const response = await fetch("/getdata?key=" + key);
+        const data = await response.json();
+
+        return data;
+      }
+
+      function generateSeries(data, key) {
+        let arr = [];
+        let eenheid = chartData[key].eenheid;
+        let range = chartData[key].range;
+        let amountBars = 3;
+
+        for (let i = 0; i < amountBars; i++) {
+          const newObj = {};
+          newObj.name = i * range + " tot " + (i + 1) * range + " " + eenheid;
+          newObj.data = [0, 0, 0, 0];
+          arr.push(newObj);
+        }
+
+        const lastObject = {};
+        lastObject.name = "> " + amountBars * range + " " + eenheid;
+        lastObject.data = [0, 0, 0, 0];
+
+        arr.push(lastObject);
+
+        console.log(data);
+
+        for (const level in data) {
+          let levelNumber = level[level.length - 1];
+          for (const hoeveelWortels in data[level]) {
+            let hoeveelMensen = data[level][hoeveelWortels] / 2;
+
+            let properIndexInArray = Math.floor(parseFloat(hoeveelWortels) / range);
+
+            if (properIndexInArray > amountBars)
+              properIndexInArray = amountBars;
+            
+            console.log("---")
+            console.log(level, properIndexInArray, arr[properIndexInArray].data[levelNumber]);
+            
+            arr[properIndexInArray].data[levelNumber] += hoeveelMensen;
+            console.log(hoeveelMensen, arr[properIndexInArray].data[levelNumber])
+          }
+        }
+
+        return arr;
+      }
+
+      document.addEventListener("DOMContentLoaded", async function() {
+        const element = document.getElementById("links");
+
+        for (let key in chartData) {
+          // Create the text node for anchor element.
+          // Create anchor element.
+          var a = document.createElement("a");
+
+          // Create the text node for anchor element.
+          var link = document.createTextNode("Link naar " + key);
+
+          // Append the text node to anchor element.
+          a.appendChild(link);
+
+          // Set the title.
+          a.title = "Link naar " + key;
+
+          // Set the href property.
+          a.href = "/?key=" + key;
+          element.appendChild(a);
+          element.appendChild(document.createElement("br"));
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let key = urlParams.get("key");
+
+        if (!key) key = "wortels";
+
+        const data = await getData(key);
+
+        let seriesData = generateSeries(data, key);
+        console.log(seriesData);
+
+        var myChart = Highcharts.chart("container", {
+          chart: {
+            type: "column"
+          },
+          title: {
+            text: chartData[key].title
+          },
+          subtitle: {
+            text: "Saskia: Super Rabbit"
+          },
+          xAxis: {
+            categories: ["Tutorial", "Level 1", "Level 2", "Level 3"],
+            crosshair: true
+          },
+          yAxis: {
+            min: 0,
+            title: {
+              text: "Mensen"
+            }
+          },
+          tooltip: {
+            headerFormat:
+              '<span style="font-size:10px">{point.key}</span><table>',
+            pointFormat:
+              '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+              '<td style="padding:0"><b>{point.y} Mensen</b></td></tr>',
+            footerFormat: "</table>",
+            shared: true,
+            useHTML: true
+          },
+          plotOptions: {
+            column: {
+              pointPadding: 0.2,
+              borderWidth: 0
+            }
+          },
+          series: seriesData
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <header>
+      <h1>Testing Assignment #1</h1>
+    </header>
+
+    <div>
+      De links naar de beschikbare metrics:
+    </div>
+    <div id="links"></div>
+    <div id="container" style="width:60%; height:400px;"></div>
+  </body>
+</html>
